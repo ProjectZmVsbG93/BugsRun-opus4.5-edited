@@ -104,7 +104,7 @@ export function saveLabData() {
 
 // パーツ購入
 export function buyPart(partId, wallet) {
-    const allParts = [...DNA_PARTS.heads, ...DNA_PARTS.bodies, ...DNA_PARTS.legs, ...DNA_PARTS.wings, ...DNA_PARTS.weapons];
+    const allParts = [...DNA_PARTS.heads, ...DNA_PARTS.bodies, ...DNA_PARTS.legs, ...DNA_PARTS.wings, ...DNA_PARTS.weapons, ...DNA_PARTS.tails, ...DNA_PARTS.organs];
     const part = allParts.find(p => p.id === partId);
 
     if (!part) return { success: false, message: 'パーツが見つかりません' };

@@ -171,8 +171,16 @@ export function setupNewRace(mode = 'normal', selectedIds = []) {
             if (condition === '絶不調') baseHp -= 2;
         }
 
+        // ★ 隠しスキル追加
+        let bugSkills = [...(template.skills || [])];
+        const hiddenSkillData = Growth.getUnlockedHiddenSkill(template.id);
+        if (hiddenSkillData && !bugSkills.includes(hiddenSkillData.skill)) {
+            bugSkills.push(hiddenSkillData.skill);
+        }
+
         return {
             ...template,
+            skills: bugSkills,
             speed: baseSpeed,
             hp: baseHp,
             attack: baseAttack,
@@ -927,6 +935,122 @@ function executeBugAction(bug) {
                 UI.showAttackVisual(bug.id, targetAcid.id, '#8BC34A');
                 UI.logMessage(bug.id, `${bug.name}の酸噴射！${targetAcid.name}に6ダメージ`);
             }
+            break;
+
+        // === 隠しスキル (高レベル解放) ===
+        case '電光石火':
+            if (Math.random() < 0.5) {
+                bug.currentPos += 20;
+                UI.logMessage(bug.id, `${bug.name}の電光石火！+20cm！`);
+            } else {
+                UI.logMessage(bug.id, `${bug.name}の電光石火は不発...`);
+            }
+            break;
+        case '必殺剣':
+            const targetKen = getRandomTarget(bug);
+            if (targetKen) {
+                damageBug(targetKen, 8);
+                UI.showAttackVisual(bug.id, targetKen.id, '#FF5722');
+                UI.logMessage(bug.id, `${bug.name}の必殺剣！${targetKen.name}に8ダメージ！`);
+            }
+            break;
+        case '鉄壁':
+            bug.counters.invincibleTurns = 3;
+            bug.isInvincible = true;
+            UI.logMessage(bug.id, `${bug.name}は鉄壁を発動！3ターン無敵！`);
+            break;
+        case '角砲':
+            const sortedFront = [...getOtherAliveBugs(bug)].sort((a, b) => b.currentPos - a.currentPos).slice(0, 3);
+            sortedFront.forEach(t => {
+                damageBug(t, 3);
+                UI.showAttackVisual(bug.id, t.id, '#795548');
+            });
+            UI.logMessage(bug.id, `${bug.name}の角砲！前方3体に3ダメージ！`);
+            break;
+        case '幸運の星':
+            getOtherAliveBugs(bug).concat([bug]).forEach(t => {
+                healBug(t, 3);
+            });
+            UI.logMessage(bug.id, `${bug.name}の幸運の星！全体HP+3！`);
+            break;
+        case '軍団突撃':
+            const antDmg = 2 + bug.counters.minions;
+            getOtherAliveBugs(bug).forEach(t => {
+                damageBug(t, antDmg);
+            });
+            UI.logMessage(bug.id, `${bug.name}の軍団突撃！全員に${antDmg}ダメージ！`);
+            break;
+        case '居合斬り':
+            const targetIai = getRandomTarget(bug);
+            if (targetIai) {
+                if (Math.random() < 0.3) {
+                    killBug(targetIai, '居合斬りで一刀両断');
+                    UI.logMessage(bug.id, `${bug.name}の居合斬り！${targetIai.name}は即死！`);
+                } else {
+                    damageBug(targetIai, 5);
+                    UI.logMessage(bug.id, `${bug.name}の居合斬り！${targetIai.name}に5ダメージ！`);
+                }
+                UI.showAttackVisual(bug.id, targetIai.id, '#E91E63');
+            }
+            break;
+        case '百足乱舞':
+            for (let i = 0; i < 2; i++) {
+                getOtherAliveBugs(bug).forEach(t => {
+                    damageBug(t, 2);
+                });
+            }
+            UI.logMessage(bug.id, `${bug.name}の百足乱舞！全体に2ダメージ×2！`);
+            break;
+        case 'ビッグバン':
+            if (bug.counters.poopSize >= 10) {
+                getOtherAliveBugs(bug).forEach(t => {
+                    damageBug(t, 5);
+                    UI.showAttackVisual(bug.id, t.id, '#795548');
+                });
+                bug.counters.poopSize = 0;
+                UI.logMessage(bug.id, `${bug.name}のビッグバン！糞爆発で全体5ダメージ！`);
+            } else {
+                UI.logMessage(bug.id, `${bug.name}のフンがまだ小さい...`);
+            }
+            break;
+        case '蝶の舞':
+            getOtherAliveBugs(bug).concat([bug]).forEach(t => {
+                healBug(t, 2);
+            });
+            bug.currentPos += 10;
+            UI.logMessage(bug.id, `${bug.name}の蝶の舞！全体HP+2 & 自分+10cm！`);
+            break;
+        case '必殺挟み':
+            const targetKuwagata = getRandomTarget(bug);
+            if (targetKuwagata) {
+                killBug(targetKuwagata, '必殺挟みで絶命');
+                UI.showAttackVisual(bug.id, targetKuwagata.id, '#F44336');
+                UI.logMessage(bug.id, `${bug.name}の必殺挟み！${targetKuwagata.name}は即死！`);
+            }
+            break;
+        case '女王の逆鱗':
+            getOtherAliveBugs(bug).forEach(t => {
+                damageBug(t, 5);
+                UI.showAttackVisual(bug.id, t.id, '#FFC107');
+            });
+            UI.logMessage(bug.id, `${bug.name}の女王の逆鱗！全体に5ダメージ！`);
+            break;
+        case '時の殻':
+            bug.counters.invincibleTurns = 2;
+            bug.isInvincible = true;
+            bug.currentHp = bug.maxHp;
+            UI.logMessage(bug.id, `${bug.name}は時の殻を発動！2ターン無敵+HP全回復！`);
+            break;
+        case '蛍の導き':
+            gameState.bugs.filter(b => !b.isDead).forEach(t => {
+                t.currentPos += 15;
+                UI.updateRacerVisuals(t);
+            });
+            UI.logMessage(bug.id, `${bug.name}の蛍の導き！全員+15cm移動！`);
+            break;
+        case '影分身':
+            bug.counters.minions += 3;
+            UI.logMessage(bug.id, `${bug.name}の影分身！分身が3体増えた(計${bug.counters.minions}体)！`);
             break;
 
         // === スキルが見つからない場合のデフォルト ===
