@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>虫さんトコトコレース</title>
+    <link rel="stylesheet" href="style.css?v=7">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <header>
+            <h1>🐛 虫さんトコトコレース 🏁</h1>
+            <div class="header-right">
+                <div class="wallet-display">
+                    💰 所持金: <span id="wallet-amount">10000</span>円
+                    <span id="loan-display" class="loan-display hidden"></span>
+                </div>
+                <!-- ハンバーガーメニュー -->
+                <div class="hamburger-menu">
+                    <button id="menu-toggle-btn" class="hamburger-btn" title="メニュー">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+                    <div id="menu-dropdown" class="menu-dropdown hidden">
+                        <a href="room.html" class="menu-item">🏠 マイルーム</a>
+                        <button id="daily-btn" class="menu-item">📅 デイリー</button>
+                        <button id="gacha-btn" class="menu-item">🎰 ガチャ</button>
+                        <button id="achievement-btn" class="menu-item">🏅 実績</button>
+                        <button id="growth-btn" class="menu-item">🌱 育成</button>
+                        <button id="shop-btn" class="menu-item">🛍️ ショップ</button>
+                        <button id="stock-btn" class="menu-item">📈 株式市場</button>
+                        <button id="stats-toggle-btn" class="menu-item">📊 統計</button>
+                        <button id="data-manage-btn" class="menu-item">💾 データ管理</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Home Screen -->
+            <section id="home-screen" class="screen active">
+                <div class="home-content">
+                    <div class="title-logo">🐛 虫さんトコトコレース 🏁</div>
+                    <p class="game-desc">個性豊かな虫さんたちのレースバトル！<br>推しの虫を見つけて大金持ちを目指そう！</p>
+                    <div class="home-stats-preview">
+                        <div class="stat-item">
+                            <span class="stat-label">総レース数</span>
+                            <span class="stat-value" id="home-total-races">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">勝率</span>
+                            <span class="stat-value" id="home-win-rate">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最高獲得</span>
+                            <span class="stat-value" id="home-max-win">0円</span>
+                        </div>
+                    </div>
+                    <button id="btn-to-mode-select" class="btn-primary btn-large">ゲームスタート！</button>
+                </div>
+            </section>
+
+            <!-- ★追加: モード選択画面 -->
+            <section id="mode-select-screen" class="screen hidden">
+                <div class="mode-select-container">
+                    <h2 class="result-title">🎮 レースモード選択</h2>
+                    <div class="mode-grid">
+                        <div class="mode-card" id="mode-normal">
+                            <div class="mode-icon">🏇</div>
+                            <h3>ノーマル</h3>
+                            <p>ランダムな5匹による標準的なレース。</p>
+                        </div>
+                        <div class="mode-card" id="mode-1v1">
+                            <div class="mode-icon">⚔️</div>
+                            <h3>タイマン</h3>
+                            <p>好きな2匹を選んで一騎打ち！</p>
+                        </div>
+                        <div class="mode-card" id="mode-all">
+                            <div class="mode-icon">🎪</div>
+                            <h3>オールスター</h3>
+                            <p>全種類の虫が一斉に走るお祭りレース！</p>
+                        </div>
+                        <div class="mode-card mode-tournament" id="mode-tournament">
+                            <div class="mode-icon">🏆</div>
+                            <h3>トーナメント</h3>
+                            <p>8匹によるガチ勝負！優勝で払戻し3倍！</p>
+                        </div>
+                        <div class="mode-card mode-raid" id="mode-raid"
+                            style="background: linear-gradient(135deg, #e91e63 0%, #9C27B0 100%);">
+                            <div class="mode-icon">👹</div>
+                            <h3>レイド</h3>
+                            <p>虫チームでボスを倒せ！</p>
+                        </div>
+                        <div class="mode-card mode-lab" id="mode-lab"
+                            style="background: linear-gradient(135deg, #7CB342 0%, #4CAF50 100%);">
+                            <div class="mode-icon">🧬</div>
+                            <h3>配合ラボ</h3>
+                            <p>オリジナルのキメラ虫を作成！</p>
+                        </div>
+                    </div>
+                    <button class="btn-back" id="btn-back-from-mode" style="margin-top:20px;">戻る</button>
+                </div>
+            </section>
+
+            <!-- ★追加: トーナメント画面 -->
+            <section id="tournament-screen" class="screen hidden">
+                <div class="tournament-container">
+                    <h2 class="result-title">🏆 トーナメント 🏆</h2>
+                    <div id="tournament-round-info" class="tournament-round-info">準々決勝</div>
+                    <div id="tournament-bracket" class="tournament-bracket">
+                        <!-- トーナメント表がJSで生成される -->
+                    </div>
+                    <div id="tournament-result" class="tournament-result"></div>
+                    <div class="tournament-actions">
+                        <button id="btn-next-tournament-match" class="btn-primary btn-large">次の試合へ</button>
+                        <button id="btn-tournament-back" class="btn-back">中断して戻る</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ★追加: レイド画面 -->
+            <section id="raid-screen" class="screen hidden">
+                <div class="raid-container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+                    <h2 style="text-align: center;">👹 レイドバトル</h2>
+                    <div id="raid-betting" class="raid-betting">
+                        <p>ボスと戦う虫チームを応援しよう！</p>
+                        <div id="raid-preview" style="margin: 20px 0;">
+                            <!-- ボスと虫チームのプレビューがJSで生成 -->
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; margin: 20px 0;">
+                            <button id="btn-bet-bugs" class="btn-primary" style="background: #4CAF50;">🐛 虫チームに賭ける
+                                (x2.0)</button>
+                            <button id="btn-bet-boss" class="btn-primary" style="background: #e91e63;">👹 ボスに賭ける
+                                (x1.5)</button>
+                        </div>
+                        <div style="text-align: center; margin: 10px 0;">
+                            <label>賭け金: </label>
+                            <input type="number" id="raid-bet-amount" step="100" min="100" placeholder="100"
+                                style="width: 120px; padding: 8px;">
+                        </div>
+                    </div>
+                    <div id="raid-battle" class="raid-battle hidden">
+                        <!-- 戦闘画面がJSで生成 -->
+                    </div>
+                    <div class="raid-actions" style="text-align: center; margin-top: 20px;">
+                        <button id="btn-raid-back" class="btn-back">戻る</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ★追加: ラボ画面 -->
+            <section id="lab-screen" class="screen hidden">
+                <div class="lab-screen-container" style="max-width: 900px; margin: 0 auto;">
+                    <div id="lab-content">
+                        <!-- ラボ内容がJSで生成 -->
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button id="btn-lab-back" class="btn-back">戻る</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ★追加: 虫指名画面 (タイマン用) -->
+            <section id="bug-select-screen" class="screen hidden">
+                <div class="bug-select-container">
+                    <h2>⚔️ 対戦する2匹を選んでください</h2>
+                    <p id="select-status" style="margin: 10px 0; font-weight:bold;">現在: 0 / 2 匹選択中</p>
+
+                    <div id="bug-selection-grid" class="items-grid"
+                        style="max-height: 60vh; overflow-y: auto; padding: 10px;">
+                        <!-- JSで生成 -->
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <button id="btn-confirm-1v1" class="btn-primary" disabled>決定してレースへ</button>
+                        <button class="btn-back" id="btn-back-from-select">戻る</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics Modal -->
+            <div id="stats-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📊 統計情報</h2>
+                        <button id="stats-close-btn" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">🏁</div>
+                                <div class="stat-number" id="stat-total-races">0</div>
+                                <div class="stat-label">総レース数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🎯</div>
+                                <div class="stat-number" id="stat-wins">0</div>
+                                <div class="stat-label">勝利数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">📈</div>
+                                <div class="stat-number" id="stat-win-rate">0%</div>
+                                <div class="stat-label">勝率</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">💰</div>
+                                <div class="stat-number" id="stat-total-earned">0円</div>
+                                <div class="stat-label">総獲得金額</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">💎</div>
+                                <div class="stat-number" id="stat-max-win">0円</div>
+                                <div class="stat-label">最高獲得金額</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🎲</div>
+                                <div class="stat-number" id="stat-total-bet">0円</div>
+                                <div class="stat-label">総賭け金額</div>
+                            </div>
+                        </div>
+                        <div class="stats-section">
+                            <h3>🏆 優勝回数ランキング</h3>
+                            <div id="stat-winners-list" class="winners-list">
+                                <!-- Will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ★追加: データ管理モーダル -->
+            <div id="data-modal" class="modal hidden">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h2>💾 データ管理</h2>
+                        <button id="data-close-btn" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="data-section">
+                            <h3>📤 データのエクスポート</h3>
+                            <p>現在のデータをテキストとして保存します。これをコピーして別のブラウザに貼り付けるとデータを移行できます。</p>
+                            <div class="data-control-row">
+                                <textarea id="export-area" readonly placeholder="ここにデータが表示されます"></textarea>
+                                <button id="btn-copy-data" class="btn-primary">コピー</button>
+                            </div>
+                        </div>
+                        <div class="data-section"
+                            style="border-top: 2px dashed #eee; margin-top: 20px; padding-top: 20px;">
+                            <h3>📥 データのインポート</h3>
+                            <p>コピーしたデータをここに貼り付けて「読み込む」を押すと、データが上書きされます。</p>
+                            <p style="color: red; font-size: 0.9rem;">※現在のデータは消えます！注意してください。</p>
+                            <div class="data-control-row">
+                                <textarea id="import-area" placeholder="ここにデータを貼り付け"></textarea>
+                                <button id="btn-import-data" class="btn-sell-stock"
+                                    style="background: #e91e63;">読み込む</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Course Screen -->
+            <section id="course-screen" class="screen hidden">
+                <h2>📍 本日のレース会場</h2>
+                <div class="course-reveal-card">
+                    <h3 id="reveal-course-name">???</h3>
+                    <p id="reveal-course-desc">...</p>
+                    <div class="reveal-weather">
+                        <p>天候:</p>
+                        <div id="reveal-weather-icon"></div>
+                        <span id="reveal-weather-text">???</span>
+                    </div>
+                </div>
+                <button id="to-betting-btn" class="btn-primary">出走虫を見る</button>
+            </section>
+
+            <!-- Betting Screen -->
+            <section id="betting-screen" class="screen hidden">
+                <div class="betting-header">
+                    <h2>🎫 どの虫さんに賭ける？</h2>
+                    <div id="loan-bet-notice" class="loan-bet-notice hidden">
+                        <div class="loan-notice-content">
+                            <strong>⚠️ 所持金が100円未満です</strong>
+                            <p>借金ベットで500円固定で賭けることができます。負けた場合は借金になります。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bug-list" id="betting-bug-list">
+                    <!-- Bug items will be injected here -->
+                </div>
+            </section>
+
+            <!-- Race Screen -->
+            <section id="race-screen" class="screen hidden">
+                <div class="race-container">
+                    <!-- Left Panel: Status & Logs -->
+                    <div class="race-left-panel">
+                        <div class="race-header-left">
+                            <h2>レース状況</h2>
+                        </div>
+                        <div class="weather-box" id="weather-box">
+                            <!-- Weather Info injected here -->
+                        </div>
+                        <div id="race-status-list" class="race-status-list">
+                            <!-- Bug Status Rows injected here -->
+                        </div>
+                        <!-- ★ボタンエリア★ -->
+                        <div class="race-controls-left"
+                            style="margin-top: auto; padding: 10px; border-top: 1px solid #eee; background: white;">
+                            <button id="next-turn-btn" class="btn-primary"
+                                style="width: 100%; padding: 12px; font-size: 1.1rem;">次へ進む！</button>
+                            <button id="intervention-btn" class="btn-intervention"
+                                style="width: 100%; padding: 10px; margin-top: 10px; font-size: 0.95rem; background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; border: none; border-radius: 10px; cursor: pointer;">
+                                🎮 介入する
+                            </button>
+                            <div id="intervention-cooldown"
+                                style="text-align: center; font-size: 0.8rem; color: #9C27B0; margin-top: 5px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Track & Weather -->
+                    <div class="race-right-panel">
+                        <div class="track-container">
+                            <div class="track-header">
+                                <div class="race-rank" id="race-rank">
+                                    <!-- Rank display will be injected here -->
+                                </div>
+                            </div>
+                            <div class="track" id="race-track">
+                                <div class="track-distance-marker marker-0">0cm</div>
+                                <div class="track-distance-marker marker-25">25cm</div>
+                                <div class="track-distance-marker marker-50">50cm</div>
+                                <div class="track-distance-marker marker-75">75cm</div>
+                                <div class="track-distance-marker marker-100">100cm</div>
+                                <div class="grid-line" style="left: 0%"></div>
+                                <div class="grid-line" style="left: 25%"></div>
+                                <div class="grid-line" style="left: 50%"></div>
+                                <div class="grid-line" style="left: 75%"></div>
+                                <div class="grid-line" style="left: 100%"></div>
+                                <!-- Lanes and Bugs injected here -->
+                                <div class="goal-line">GOAL</div>
+                            </div>
+                        </div>
+                        <!-- 行動ログパネルを削除しました -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Result Screen -->
+            <section id="result-screen" class="screen hidden">
+                <div class="result-container">
+                    <h2 class="result-title">🏆 結果発表 🏆</h2>
+                    <div class="result-content">
+                        <div id="winner-announcement" class="winner-announcement">優勝: ???</div>
+                        <div id="payout-info" class="payout-info">
+                            <!-- Payout details -->
+                        </div>
+                        <div id="result-stats" class="result-stats">
+                            <!-- Additional stats will be shown here -->
+                        </div>
+                        <div class="result-final-ranking" id="result-final-ranking">
+                            <!-- Final ranking will be shown here -->
+                        </div>
+                    </div>
+                    <div class="result-actions">
+                        <button id="next-race-btn" class="btn-primary btn-large">次のレースへ</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 実績モーダル -->
+            <div id="achievement-modal" class="modal hidden">
+                <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h2>🏅 実績</h2>
+                        <button id="achievement-close-btn" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body" id="achievement-list">
+                        <!-- JSで描画される -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- デイリーチャレンジモーダル -->
+            <div id="daily-modal" class="modal hidden">
+                <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h2>📅 本日のチャレンジ</h2>
+                        <button id="daily-close-btn" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body" id="daily-list">
+                        <!-- JSで描画される -->
+                    </div>
+                </div>
+            </div>
+            <div id="gacha-modal" class="modal hidden">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h2>🎰 ガチャ</h2>
+                        <button id="gacha-close-btn" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="gacha-info" style="text-align: center; margin-bottom: 20px;">
+                            <p>カード・スキン・お守りをゲットしよう！</p>
+                            <p style="color: #FF9800; font-weight: bold;">1回: 1,000円 / 10連: 9,000円 (1回分お得!)</p>
+                        </div>
+                        <div id="gacha-result-area"
+                            style="min-height: 150px; display: flex; justify-content: center; align-items: center;">
+                            <!-- 結果がここに表示される -->
+                        </div>
+                        <div class="gacha-actions"
+                            style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                            <button id="btn-gacha-1" class="btn-primary"
+                                style="background: linear-gradient(135deg, #2196F3, #03A9F4);">1回引く</button>
+                            <button id="btn-gacha-10" class="btn-primary"
+                                style="background: linear-gradient(135deg, #FFD700, #FFA500);">10連ガチャ</button>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button id="btn-show-collection" class="btn-back">コレクションを見る</button>
+                        </div>
+                        <div id="collection-area" class="hidden" style="margin-top: 20px;">
+                            <!-- コレクション表示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 株式市場モーダル (クイック確認) -->
+            <div id="stock-modal" class="modal hidden">
+                <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h2>📈 株価クイック確認</h2>
+                        <button id="stock-close-btn" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="text-align:center; color:#666; margin-bottom:15px;">※売買はショップで行えます</p>
+                        <div id="stock-content">
+                            <!-- JSで描画される -->
+                        </div>
+                        <div style="text-align:center; margin-top:20px;">
+                            <button id="btn-go-shop-stock" class="btn-primary"
+                                style="background: linear-gradient(135deg, #4CAF50, #8BC34A);">🛍️ ショップで売買する</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 育成モーダル -->
+            <div id="growth-modal" class="modal hidden">
+                <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h2>🌱 虫の育成</h2>
+                        <button id="growth-close-btn" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body" id="growth-list">
+                        <!-- JSで描画される -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
