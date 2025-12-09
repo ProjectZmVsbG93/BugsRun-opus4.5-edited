@@ -134,20 +134,52 @@ export function setupNewRace(mode = 'normal', selectedIds = []) {
     gameState.bugs = participants.map(template => {
         const conditionKeys = Object.keys(CONDITIONS);
         const condition = conditionKeys[Math.floor(Math.random() * conditionKeys.length)];
-        let hp = template.hp;
+
+        // ★ 育成ボーナス適用
+        let growthBonus = { speedBonus: 0, hpBonus: 0, attackBonus: 0 };
+        if (template.id && !template.id.startsWith('chimera_')) {
+            const growthData = Growth.getGrowthBonus(template.id);
+            if (growthData) {
+                growthBonus.speedBonus = growthData.speedBonus || 0;
+                growthBonus.hpBonus = growthData.hpBonus || 0;
+                growthBonus.attackBonus = growthData.attackBonus || 0;
+            }
+        }
+
+        // ★ お守り効果適用 (ガチャコレクションから)
+        let charmBonus = { speed: 0, hp: 0, attack: 0 };
+        try {
+            const collection = JSON.parse(localStorage.getItem('bugsRaceGachaCollection') || '{}');
+            for (const [itemId, data] of Object.entries(collection)) {
+                if (data.count > 0 && itemId.startsWith('charm_')) {
+                    // お守りは装備中のものだけ適用 (暫定: 全て適用)
+                    if (itemId.includes('speed')) charmBonus.speed += 1;
+                    if (itemId.includes('hp') || itemId.includes('endure')) charmBonus.hp += 1;
+                    if (itemId.includes('attack') || itemId.includes('power')) charmBonus.attack += 1;
+                }
+            }
+        } catch (e) { /* ignore */ }
+
+        // 基本ステータス + ボーナス
+        let baseSpeed = template.speed + growthBonus.speedBonus + charmBonus.speed;
+        let baseHp = template.hp + growthBonus.hpBonus + charmBonus.hp;
+        let baseAttack = template.attack + growthBonus.attackBonus + charmBonus.attack;
 
         // 特定の虫のコンディション補正
         if (template.id === 'isopod' || template.id === 'beetle') {
-            if (condition === '不調') hp -= 1;
-            if (condition === '絶不調') hp -= 2;
+            if (condition === '不調') baseHp -= 1;
+            if (condition === '絶不調') baseHp -= 2;
         }
 
         return {
             ...template,
+            speed: baseSpeed,
+            hp: baseHp,
+            attack: baseAttack,
             originalCondition: condition,
             condition: condition,
-            currentHp: hp,
-            maxHp: hp,
+            currentHp: baseHp,
+            maxHp: baseHp,
             currentPos: 0,
             isDead: false,
             isStunned: false,
@@ -186,10 +218,36 @@ function pickWeather(course) {
 function calculateOdds(bug, condition) {
     const condMult = CONDITIONS[condition].val;
     const powerScore = (bug.speed * 2 + bug.hp + bug.attack) * condMult;
+
+    // ★ お守りオッズボーナス計算（オッズを上げる＝払い戻し増加）
+    let charmOddsBonus = 0;
+    try {
+        const collection = JSON.parse(localStorage.getItem('bugsRaceGachaCollection') || '{}');
+        const CHARM_EFFECTS = [
+            { id: 'charm_luck_small', bonus: 0.05 },
+            { id: 'charm_luck_medium', bonus: 0.1 },
+            { id: 'charm_luck_large', bonus: 0.2 },
+            { id: 'charm_miracle', bonus: 0.3 }
+        ];
+        for (const charm of CHARM_EFFECTS) {
+            // コレクションは数値で保存されている (例: collection['charm_luck_small'] = 2)
+            const count = collection[charm.id];
+            if (count && count > 0) {
+                charmOddsBonus += charm.bonus;
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    // 基本オッズ計算
     let odds = (200 / powerScore).toFixed(1);
     if (odds < 1.1) odds = 1.1;
     if (odds > 50) odds = 50.0;
-    return parseFloat(odds);
+
+    // ★ お守り効果でオッズを上げる（払い戻しアップ）
+    odds = parseFloat(odds) * (1 + charmOddsBonus);
+    odds = parseFloat(odds.toFixed(1));
+
+    return odds;
 }
 
 export function startRace() {
@@ -1301,7 +1359,8 @@ function processResult(winner) {
         El.winnerAnnouncement.style.color = '#d84315';
         if (gameState.bet.targetId === winner.id) {
             won = true;
-            payout = Math.floor(gameState.bet.amount * gameState.bet.odds);
+            const payoutMult = 1 + (gameState.bet.payoutBonus || 0);
+            payout = Math.floor(gameState.bet.amount * gameState.bet.odds * payoutMult);
             gameState.stats.wins++;
             gameState.stats.totalEarned += payout;
             if (payout > gameState.stats.maxWin) {
@@ -1313,7 +1372,8 @@ function processResult(winner) {
         El.winnerAnnouncement.style.color = '#5d4037';
         if (gameState.bet.targetId === 'ALL_DEAD') {
             won = true;
-            payout = Math.floor(gameState.bet.amount * gameState.bet.odds);
+            const payoutMult = 1 + (gameState.bet.payoutBonus || 0);
+            payout = Math.floor(gameState.bet.amount * gameState.bet.odds * payoutMult);
             gameState.stats.wins++;
             gameState.stats.totalEarned += payout;
         } else if (gameState.bet.targetId !== 'ALL_DEAD') {

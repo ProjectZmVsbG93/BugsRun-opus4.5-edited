@@ -9,6 +9,44 @@ export function renderBettingScreen() {
     if (!El.bettingBugList) return;
     El.bettingBugList.innerHTML = '';
 
+    // ★ お守りボーナス計算
+    let charmOddsBonus = 0;
+    let charmPayoutBonus = 0;
+    try {
+        const collection = JSON.parse(localStorage.getItem('bugsRaceGachaCollection') || '{}');
+        const CHARM_EFFECTS = [
+            { id: 'charm_luck_small', odds: 0.05, payout: 0 },
+            { id: 'charm_luck_medium', odds: 0.1, payout: 0 },
+            { id: 'charm_luck_large', odds: 0.2, payout: 0 },
+            { id: 'charm_fortune', odds: 0, payout: 0.05 },
+            { id: 'charm_miracle', odds: 0.3, payout: 0.1 }
+        ];
+        for (const charm of CHARM_EFFECTS) {
+            const count = collection[charm.id];
+            if (count && count > 0) {
+                charmOddsBonus += charm.odds;
+                charmPayoutBonus += charm.payout;
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    const oddsPercentDisplay = charmOddsBonus > 0 ? ` <span class="charm-bonus">+${Math.round(charmOddsBonus * 100)}%</span>` : '';
+    const payoutPercentDisplay = charmPayoutBonus > 0 ? ` <span class="charm-bonus">+${Math.round(charmPayoutBonus * 100)}%</span>` : '';
+
+    // お守りボーナス表示
+    if (charmOddsBonus > 0 || charmPayoutBonus > 0) {
+        const charmInfoDiv = document.createElement('div');
+        charmInfoDiv.className = 'charm-bonus-info';
+        charmInfoDiv.innerHTML = `
+            <div style="background: linear-gradient(135deg, #FFF8E1, #FFECB3); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
+                <strong>🍀 お守り効果発動中！</strong>
+                ${charmOddsBonus > 0 ? `<span style="margin-left: 10px; color: #4CAF50;">オッズ +${Math.round(charmOddsBonus * 100)}%</span>` : ''}
+                ${charmPayoutBonus > 0 ? `<span style="margin-left: 10px; color: #FF9800;">払戻 +${Math.round(charmPayoutBonus * 100)}%</span>` : ''}
+            </div>
+        `;
+        El.bettingBugList.appendChild(charmInfoDiv);
+    }
+
     // --- ステージ情報 & クイックベットボタン表示 ---
     const course = gameState.currentCourse;
     if (course) {
@@ -64,8 +102,10 @@ export function renderBettingScreen() {
         const hpStars = '★'.repeat(Math.min(5, Math.ceil(bug.hp / 3)));
         const atkStars = '★'.repeat(Math.min(5, bug.attack));
 
-        const potentialWin100 = Math.floor(100 * bug.odds);
-        const potentialWin500 = Math.floor(500 * bug.odds);
+        // 払い戻しにお守りボーナスを適用
+        const payoutMult = 1 + charmPayoutBonus;
+        const potentialWin100 = Math.floor(100 * bug.odds * payoutMult);
+        const potentialWin500 = Math.floor(500 * bug.odds * payoutMult);
         const canBet = gameState.wallet >= 100;
 
         row.innerHTML = `
@@ -73,7 +113,7 @@ export function renderBettingScreen() {
                 <div class="bug-name">${bug.name}</div>
                 <div class="bug-condition-wrap">
                     <span class="condition-badge ${CONDITIONS[bug.condition].class}">${bug.condition}</span>
-                    <span class="odds-display">${bug.odds}倍</span>
+                    <span class="odds-display">${bug.odds}倍${oddsPercentDisplay}</span>
                 </div>
             </div>
             <div class="card-body">
@@ -85,7 +125,7 @@ export function renderBettingScreen() {
                     <div>HP : ${hpStars}</div>
                     <div>Atk: ${atkStars}</div>
                     <div class="potential-win">
-                        ${canBet ? `100円で勝つと: ${potentialWin100.toLocaleString()}円` : `借金500円で勝つと: ${potentialWin500.toLocaleString()}円`}
+                        ${canBet ? `100円で勝つと: ${potentialWin100.toLocaleString()}円${payoutPercentDisplay}` : `借金500円で勝つと: ${potentialWin500.toLocaleString()}円${payoutPercentDisplay}`}
                     </div>
                 </div>
             </div>
@@ -130,7 +170,16 @@ window.placeBetOnBug = function (bugId) {
         return;
     }
 
-    gameState.bet = { targetId: bugId, amount: amount, odds: gameState.bugs.find(b => b.id === bugId).odds, isLoan: false };
+    // ★ お守り払戻ボーナス計算
+    let payoutBonus = 0;
+    try {
+        const collection = JSON.parse(localStorage.getItem('bugsRaceGachaCollection') || '{}');
+        if (collection['charm_fortune'] && collection['charm_fortune'] > 0) payoutBonus += 0.05;
+        if (collection['charm_miracle'] && collection['charm_miracle'] > 0) payoutBonus += 0.1;
+    } catch (e) { /* ignore */ }
+
+    const bug = gameState.bugs.find(b => b.id === bugId);
+    gameState.bet = { targetId: bugId, amount: amount, odds: bug.odds, isLoan: false, payoutBonus: payoutBonus };
     gameState.wallet -= amount;
     updateWalletDisplay();
 
@@ -143,14 +192,14 @@ window.placeBetOnBug = function (bugId) {
     const selectedRow = input.closest('.betting-row');
     selectedRow.classList.add('selected');
 
-    const bug = gameState.bugs.find(b => b.id === bugId);
-    const potentialWin = Math.floor(amount * bug.odds);
-    if (confirm(`${bug.name}に${amount.toLocaleString()}円賭けてレースを開始しますか？\n\n勝った場合の払い戻し: ${potentialWin.toLocaleString()}円`)) {
+    const potentialWin = Math.floor(amount * bug.odds * (1 + payoutBonus));
+    const bonusDisplay = payoutBonus > 0 ? ` (+${Math.round(payoutBonus * 100)}% 払戻ボーナス)` : '';
+    if (confirm(`${bug.name}に${amount.toLocaleString()}円賭けてレースを開始しますか？\n\n勝った場合の払い戻し: ${potentialWin.toLocaleString()}円${bonusDisplay}`)) {
         startRace();
     } else {
         gameState.wallet += amount;
         updateWalletDisplay();
-        gameState.bet = { targetId: null, amount: 0, odds: 0, isLoan: false };
+        gameState.bet = { targetId: null, amount: 0, odds: 0, isLoan: false, payoutBonus: 0 };
         inputs.forEach(i => i.disabled = false);
         buttons.forEach(b => b.disabled = false);
         selectedRow.classList.remove('selected');
@@ -160,11 +209,20 @@ window.placeBetOnBug = function (bugId) {
 window.placeLoanBetOnBug = function (bugId) {
     const LOAN_AMOUNT = 500;
 
-    const bug = gameState.bugs.find(b => b.id === bugId);
-    const potentialWin = Math.floor(LOAN_AMOUNT * bug.odds);
+    // ★ お守り払戻ボーナス計算
+    let payoutBonus = 0;
+    try {
+        const collection = JSON.parse(localStorage.getItem('bugsRaceGachaCollection') || '{}');
+        if (collection['charm_fortune'] && collection['charm_fortune'] > 0) payoutBonus += 0.05;
+        if (collection['charm_miracle'] && collection['charm_miracle'] > 0) payoutBonus += 0.1;
+    } catch (e) { /* ignore */ }
 
-    if (confirm(`${bug.name}に借金${LOAN_AMOUNT}円で賭けてレースを開始しますか？\n\n勝った場合の払い戻し: ${potentialWin.toLocaleString()}円 (借金${LOAN_AMOUNT}円を返済後、残りを獲得)\n負けた場合: 借金${LOAN_AMOUNT}円が残ります`)) {
-        gameState.bet = { targetId: bugId, amount: LOAN_AMOUNT, odds: bug.odds, isLoan: true };
+    const bug = gameState.bugs.find(b => b.id === bugId);
+    const potentialWin = Math.floor(LOAN_AMOUNT * bug.odds * (1 + payoutBonus));
+    const bonusDisplay = payoutBonus > 0 ? ` (+${Math.round(payoutBonus * 100)}% 払戻ボーナス)` : '';
+
+    if (confirm(`${bug.name}に借金${LOAN_AMOUNT}円で賭けてレースを開始しますか？\n\n勝った場合の払い戻し: ${potentialWin.toLocaleString()}円${bonusDisplay} (借金${LOAN_AMOUNT}円を返済後、残りを獲得)\n負けた場合: 借金${LOAN_AMOUNT}円が残ります`)) {
+        gameState.bet = { targetId: bugId, amount: LOAN_AMOUNT, odds: bug.odds, isLoan: true, payoutBonus: payoutBonus };
 
         const buttons = document.querySelectorAll('.btn-bet');
         buttons.forEach(b => b.disabled = true);

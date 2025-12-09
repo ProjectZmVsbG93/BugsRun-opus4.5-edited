@@ -678,7 +678,13 @@ function init() {
         });
     }
     if (El.toBettingBtn) El.toBettingBtn.addEventListener('click', () => UI.switchScreen('betting'));
-    if (El.nextTurnBtn) El.nextTurnBtn.addEventListener('click', processTurn);
+    if (El.nextTurnBtn) El.nextTurnBtn.addEventListener('click', () => {
+        processTurn();
+        // 介入クールダウンを減らす
+        if (window.decreaseInterventionCooldown) {
+            window.decreaseInterventionCooldown();
+        }
+    });
 
     // ★修正: 「次のレースへ」ボタンを押したとき、モード選択画面に戻る
     if (El.nextRaceBtn) {
@@ -955,6 +961,71 @@ document.getElementById('btn-confirm-1v1')?.addEventListener('click', () => {
         UI.switchScreen('betting');
     }
 });
+
+// === 介入ボタン (3ターンに1回のみ使用可能) ===
+let interventionCooldown = 0;
+const interventionBtn = document.getElementById('intervention-btn');
+const interventionCooldownDiv = document.getElementById('intervention-cooldown');
+let interventionPanelVisible = false;
+
+function updateInterventionUI() {
+    if (interventionBtn) {
+        if (interventionCooldown > 0) {
+            interventionBtn.disabled = true;
+            interventionBtn.textContent = `🎮 介入 (${interventionCooldown}ターン後)`;
+            if (interventionCooldownDiv) {
+                interventionCooldownDiv.textContent = `クールダウン中: あと${interventionCooldown}ターン`;
+            }
+        } else {
+            interventionBtn.disabled = false;
+            interventionBtn.textContent = '🎮 介入する';
+            if (interventionCooldownDiv) {
+                interventionCooldownDiv.textContent = '';
+            }
+        }
+    }
+}
+
+if (interventionBtn) {
+    interventionBtn.addEventListener('click', () => {
+        if (interventionCooldown > 0) {
+            alert(`介入はあと${interventionCooldown}ターン後に使用可能です`);
+            return;
+        }
+
+        // 介入パネルを表示
+        const container = document.createElement('div');
+        container.id = 'intervention-modal';
+        container.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center;';
+
+        const panel = document.createElement('div');
+        panel.style.cssText = 'background:white; padding:20px; border-radius:15px; max-width:500px; max-height:80vh; overflow-y:auto;';
+
+        Intervention.renderInterventionPanel(panel);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '✕ 閉じる';
+        closeBtn.style.cssText = 'display:block; margin:15px auto 0; padding:10px 20px; background:#ccc; border:none; border-radius:5px; cursor:pointer;';
+        closeBtn.onclick = () => container.remove();
+        panel.appendChild(closeBtn);
+
+        container.appendChild(panel);
+        container.onclick = (e) => { if (e.target === container) container.remove(); };
+        document.body.appendChild(container);
+
+        // クールダウン開始
+        interventionCooldown = 3;
+        updateInterventionUI();
+    });
+}
+
+// ターン進行時にクールダウンを減らす (グローバル関数として公開)
+window.decreaseInterventionCooldown = function () {
+    if (interventionCooldown > 0) {
+        interventionCooldown--;
+        updateInterventionUI();
+    }
+};
 
 // 起動
 document.addEventListener('DOMContentLoaded', init);

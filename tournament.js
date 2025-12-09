@@ -2,6 +2,7 @@
 import { gameState } from './state.js';
 import * as UI from './ui.js';
 import { COURSES, BUG_TEMPLATES, CONDITIONS, RACE_DISTANCE } from './data.js';
+import * as Daily from './daily.js';
 
 // トーナメント状態
 export const tournamentState = {
@@ -22,6 +23,9 @@ export function startTournament() {
     tournamentState.round = 0;
     tournamentState.results = [];
     tournamentState.currentMatchIndex = 0;
+
+    // ★ デイリーチャレンジ: トーナメント参戦を記録
+    Daily.updateDailyProgress('tournament_join', 1);
 
     // 全虫からランダムに8匹選出
     const baseBugs = BUG_TEMPLATES.filter(t => !t.id.startsWith('index_'));

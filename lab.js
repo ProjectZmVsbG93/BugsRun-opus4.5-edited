@@ -125,11 +125,13 @@ export function getOwnedParts() {
 }
 
 // キメラ作成
-export function createChimera(name, headId, bodyId, legId, wingId = null, weaponId = null) {
+export function createChimera(name, headId, bodyId, legId, wingId = null, weaponId = null, tailId = null, organId = null) {
     // パーツ確認
     const parts = { head: headId, body: bodyId, leg: legId };
     if (wingId) parts.wing = wingId;
     if (weaponId) parts.weapon = weaponId;
+    if (tailId) parts.tail = tailId;
+    if (organId) parts.organ = organId;
 
     // 所持パーツ消費チェック
     for (const [key, id] of Object.entries(parts)) {
@@ -154,6 +156,8 @@ export function createChimera(name, headId, bodyId, legId, wingId = null, weapon
     const legPart = allParts.find(p => p.id === legId);
     const wingPart = wingId ? allParts.find(p => p.id === wingId) : null;
     const weaponPart = weaponId ? allParts.find(p => p.id === weaponId) : null;
+    const tailPart = tailId ? allParts.find(p => p.id === tailId) : null;
+    const organPart = organId ? allParts.find(p => p.id === organId) : null;
 
     // ステータス計算
     let speed = 12; // ベース値
@@ -172,6 +176,8 @@ export function createChimera(name, headId, bodyId, legId, wingId = null, weapon
     if (legPart && legPart.skill) skills.push(legPart.skill);
     if (wingPart && wingPart.skill) skills.push(wingPart.skill);
     if (weaponPart && weaponPart.skill) skills.push(weaponPart.skill);
+    if (tailPart && tailPart.skill) skills.push(tailPart.skill);
+    if (organPart && organPart.skill) skills.push(organPart.skill);
 
     // キメラ作成
     const chimera = {
@@ -402,6 +408,28 @@ function renderCreateTab(container) {
                 </select>
             </div>
             
+            <div class="form-group">
+                <label>尻尾 (任意):</label>
+                <select id="select-tail">
+                    <option value="">なし</option>
+                    ${DNA_PARTS.tails.map(p => {
+        const owned = labData.ownedParts[p.id] || 0;
+        return owned > 0 ? `<option value="${p.id}">${p.icon} ${p.name} - ${p.skill} (所持:${owned})</option>` : '';
+    }).join('')}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>特殊器官 (任意):</label>
+                <select id="select-organ">
+                    <option value="">なし</option>
+                    ${DNA_PARTS.organs.map(p => {
+        const owned = labData.ownedParts[p.id] || 0;
+        return owned > 0 ? `<option value="${p.id}">${p.icon} ${p.name} - ${p.skill} (所持:${owned})</option>` : '';
+    }).join('')}
+                </select>
+            </div>
+            
             <button id="btn-create-chimera" class="btn-primary">キメラを作成！</button>
         </div>
     `;
@@ -415,11 +443,13 @@ function renderCreateTab(container) {
         const leg = document.getElementById('select-leg').value;
         const wing = document.getElementById('select-wing').value || null;
         const weapon = document.getElementById('select-weapon').value || null;
+        const tail = document.getElementById('select-tail').value || null;
+        const organ = document.getElementById('select-organ').value || null;
 
         if (!name) { alert('名前を入力してください'); return; }
         if (!head || !body || !leg) { alert('頭部・胴体・脚は必須です'); return; }
 
-        const result = createChimera(name, head, body, leg, wing, weapon);
+        const result = createChimera(name, head, body, leg, wing, weapon, tail, organ);
         if (result.success) {
             alert(`🧬 ${result.chimera.name} を作成しました！\nSpeed:${result.chimera.speed} HP:${result.chimera.hp} ATK:${result.chimera.attack}`);
             renderCreateTab(container);

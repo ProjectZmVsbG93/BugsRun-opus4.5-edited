@@ -297,8 +297,16 @@
                 <div class="race-container">
                     <!-- Left Panel: Status & Logs -->
                     <div class="race-left-panel">
-                        <div class="race-header-left">
+                        <div class="race-header-left"
+                            style="display: flex; justify-content: space-between; align-items: center;">
                             <h2>レース状況</h2>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button id="intervention-btn" class="btn-intervention"
+                                    style="padding: 8px 15px; font-size: 0.85rem; background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                    🎮 介入
+                                </button>
+                                <span id="intervention-cooldown" style="font-size: 0.75rem; color: #9C27B0;"></span>
+                            </div>
                         </div>
                         <div class="weather-box" id="weather-box">
                             <!-- Weather Info injected here -->
@@ -311,12 +319,6 @@
                             style="margin-top: auto; padding: 10px; border-top: 1px solid #eee; background: white;">
                             <button id="next-turn-btn" class="btn-primary"
                                 style="width: 100%; padding: 12px; font-size: 1.1rem;">次へ進む！</button>
-                            <button id="intervention-btn" class="btn-intervention"
-                                style="width: 100%; padding: 10px; margin-top: 10px; font-size: 0.95rem; background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; border: none; border-radius: 10px; cursor: pointer;">
-                                🎮 介入する
-                            </button>
-                            <div id="intervention-cooldown"
-                                style="text-align: center; font-size: 0.8rem; color: #9C27B0; margin-top: 5px;"></div>
                         </div>
                     </div>
 
