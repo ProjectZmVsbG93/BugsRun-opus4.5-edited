@@ -15,6 +15,7 @@ import * as Growth from './growth.js';
 import * as Intervention from './intervention.js';
 import * as Raid from './raid.js';
 import * as Lab from './lab.js';
+import * as Encyclopedia from './encyclopedia.js';
 
 // ウォレットに追加する関数（デイリーチャレンジ報酬用）
 window.addToWallet = function (amount) {
@@ -1026,6 +1027,17 @@ window.decreaseInterventionCooldown = function () {
         updateInterventionUI();
     }
 };
+
+// === 図鑑ボタン ===
+const encyclopediaBtn = document.getElementById('encyclopedia-btn');
+if (encyclopediaBtn) {
+    encyclopediaBtn.addEventListener('click', () => {
+        Encyclopedia.showEncyclopedia();
+        // メニューを閉じる
+        const menuDropdown = document.getElementById('menu-dropdown');
+        if (menuDropdown) menuDropdown.classList.add('hidden');
+    });
+}
 
 // 起動
 document.addEventListener('DOMContentLoaded', init);
